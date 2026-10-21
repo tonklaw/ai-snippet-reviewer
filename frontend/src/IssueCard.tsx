@@ -20,7 +20,8 @@ type Props = {
 };
 
 export function IssueCard(props: Props) {
-  const { issue, language, open, onToggle, onHover, fixStatus, onReplace } = props;
+  const { issue, language, open, onToggle, onHover, fixStatus, onReplace } =
+    props;
   const { fix } = issue;
 
   return (
@@ -48,13 +49,19 @@ export function IssueCard(props: Props) {
 
       {open && fix && (
         <div className="fix">
-          <CodeBlock code={fix.code} language={language} firstLine={fix.startLine} />
+          <CodeBlock
+            code={fix.code}
+            language={language}
+            firstLine={fix.startLine}
+          />
           <div className="fix-actions">
-            <span className="muted">Fix for {lineLabel(fix.startLine, fix.endLine).toLowerCase()}</span>
-            {fixStatus === "applied" && <span className="fixed">✓ Replaced</span>}
+            <span className="muted">
+              Fix for {lineLabel(fix.startLine, fix.endLine).toLowerCase()}
+            </span>
+            {fixStatus === "applied" && <span className="fixed">✓ Fixed</span>}
             {fixStatus === "ready" && (
               <button className="primary" onClick={onReplace}>
-                Replace
+                Fix
               </button>
             )}
             {fixStatus === "blocked" && (
