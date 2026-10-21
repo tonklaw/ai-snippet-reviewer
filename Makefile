@@ -1,4 +1,4 @@
-.PHONY: install backend frontend test lint format
+.PHONY: install backend frontend test lint format up down logs
 
 install:
 	cd backend && uv sync
@@ -19,3 +19,9 @@ lint:
 
 format:
 	cd backend && uv run ruff check --fix . && uv run ruff format .
+
+up:
+	docker compose up --build -d
+
+down:
+	docker compose down
