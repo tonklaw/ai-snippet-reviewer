@@ -51,3 +51,15 @@ class LintResponse(ApiModel):
     issues: list[Issue]
     summary: str
     metadata: LintMetadata
+
+
+class ModelInfo(ApiModel):
+    id: str  # alias shown in the UI, e.g. "claude"
+    model: str  # LiteLLM model string
+    available: bool
+    reason: str | None = None  # why it's unavailable
+
+
+class ModelsResponse(ApiModel):
+    models: list[ModelInfo]
+    default: str | None
