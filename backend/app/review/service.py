@@ -92,7 +92,7 @@ class ReviewService:
                 stage="review",
                 model=review.model,
                 duration_ms=_elapsed_ms(started),
-                cached=False,
+                cached=review.cached,
             ),
         )
 

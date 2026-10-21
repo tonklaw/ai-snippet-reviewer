@@ -8,6 +8,7 @@ from app.schema import Issue, Language
 class ProviderReview:
     issues: list[Issue]
     model: str
+    cached: bool = False  # True when the answer came from the cache, not the model
 
 
 class ReviewProvider(Protocol):

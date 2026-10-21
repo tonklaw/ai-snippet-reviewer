@@ -1,12 +1,13 @@
 import litellm
 from pydantic import ValidationError
 
+from app.cache import cache_key, make_cache
 from app.config import Settings
 from app.errors import AppError
 from app.llm.base import ProviderReview
 from app.llm.models import pick_model
 from app.llm.output import ReviewOutput, to_issue
-from app.llm.prompt import build_messages
+from app.llm.prompt import PROMPT_VERSION, build_messages
 from app.schema import Language, ModelInfo
 
 litellm.suppress_debug_info = True
@@ -32,27 +33,20 @@ def keep_indent(fix_code: str, original_line: str) -> str:
 class LiteLLMProvider:
     def __init__(self, settings: Settings):
         self.settings = settings
+        self.cache = make_cache(settings)
 
     async def review(self, language: Language, code: str, model: str | None) -> ProviderReview:
         info = await pick_model(self.settings, model)
-        messages = build_messages(language, code)
 
-        # One retry: show the model its invalid reply and what was wrong with it
-        output = None
-        for _ in range(2):
-            text = await self._complete(info, messages)
-            try:
-                output = ReviewOutput.model_validate_json(strip_fences(text))
-                break
-            except ValidationError as e:
-                problem = e.errors()[0]["msg"]
-                messages = [
-                    *messages,
-                    {"role": "assistant", "content": text},
-                    {"role": "user", "content": f"Invalid reply: {problem}. Send only the JSON."},
-                ]
+        # everything that changes the answer goes into the key
+        params = self.settings.llm_model_params.get(info.id, {})
+        key = cache_key(PROMPT_VERSION, info.model, params, language, code)
+
+        output = await self._from_cache(key)
+        cached = output is not None
         if output is None:
-            raise AppError(502, "LLM_BAD_RESPONSE", f"{info.id} returned an invalid review")
+            output = await self._ask(info, build_messages(language, code))
+            await self.cache.set(key, output.model_dump_json())
 
         lines = code.split("\n")
         issues = []
@@ -60,7 +54,31 @@ class LiteLLMProvider:
             if item.fix and 1 <= item.fix.start_line <= len(lines):
                 item.fix.code = keep_indent(item.fix.code, lines[item.fix.start_line - 1])
             issues.append(to_issue(item))
-        return ProviderReview(issues=issues, model=info.id)
+        return ProviderReview(issues=issues, model=info.id, cached=cached)
+
+    async def _from_cache(self, key: str) -> ReviewOutput | None:
+        text = await self.cache.get(key)
+        if text is None:
+            return None
+        try:
+            return ReviewOutput.model_validate_json(text)
+        except ValidationError:
+            return None  # stored by an older version with a different shape: treat as a miss
+
+    async def _ask(self, info: ModelInfo, messages: list[dict]) -> ReviewOutput:
+        # One retry: show the model its invalid reply and what was wrong with it
+        for _ in range(2):
+            text = await self._complete(info, messages)
+            try:
+                return ReviewOutput.model_validate_json(strip_fences(text))
+            except ValidationError as e:
+                problem = e.errors()[0]["msg"]
+                messages = [
+                    *messages,
+                    {"role": "assistant", "content": text},
+                    {"role": "user", "content": f"Invalid reply: {problem}. Send only the JSON."},
+                ]
+        raise AppError(502, "LLM_BAD_RESPONSE", f"{info.id} returned an invalid review")
 
     async def _complete(self, info: ModelInfo, messages: list[dict]) -> str:
         params = dict(self.settings.llm_model_params.get(info.id, {}))
