@@ -1,43 +1,46 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import type { Language } from "./api";
+import { CodeEditor } from "./CodeEditor";
+import { LANGUAGES, SAMPLES } from "./samples";
 import "./App.css";
 
-type Health =
-  | { state: "loading" }
-  | { state: "ok"; env: string }
-  | { state: "error"; message: string };
-
 function App() {
-  const [health, setHealth] = useState<Health>({ state: "loading" });
+  const [language, setLanguage] = useState<Language>("python");
+  const [code, setCode] = useState(SAMPLES.python);
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    fetch("/api/v1/health", { signal: controller.signal })
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const body: { status: string; env: string } = await res.json();
-        setHealth({ state: "ok", env: body.env });
-      })
-      .catch((err: unknown) => {
-        if (controller.signal.aborted) return;
-        setHealth({
-          state: "error",
-          message: err instanceof Error ? err.message : String(err),
-        });
-      });
-
-    return () => controller.abort();
-  }, []);
+  function changeLanguage(next: Language) {
+    if (code === SAMPLES[language]) setCode(SAMPLES[next]);
+    setLanguage(next);
+  }
 
   return (
-    <main className="app">
-      <h1>Mini-AI Code Reviewer</h1>
-      <p className={`health health--${health.state}`}>
-        {health.state === "loading" && "Backend: checking…"}
-        {health.state === "ok" && `Backend: ok (${health.env})`}
-        {health.state === "error" && `Backend unreachable: ${health.message}`}
-      </p>
-    </main>
+    <div className="app">
+      <header className="toolbar">
+        <h1>Mini-AI Code Reviewer</h1>
+        <label>
+          Language
+          <select
+            value={language}
+            onChange={(e) => changeLanguage(e.target.value as Language)}
+          >
+            {LANGUAGES.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </header>
+
+      <main className="panes">
+        <section className="pane">
+          <CodeEditor value={code} onChange={setCode} language={language} />
+        </section>
+        <section className="pane results">
+          <p className="muted">Results will appear here.</p>
+        </section>
+      </main>
+    </div>
   );
 }
 
