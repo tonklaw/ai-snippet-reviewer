@@ -58,7 +58,7 @@ Configuring model require changes in `backend/app/config.py`. Adding another mod
 
 ## Architecture
 
-```
+```mermaid
 flowchart TD
   Frontend["Frontend<br/>React + Redux"]
 
@@ -103,7 +103,7 @@ flowchart TD
   Return2 --> Resp
 ```
 
-**Syntax check.** Python uses the standard library's `ast` parser, Go/JavaScript/TypeScript use [tree-sitter](https://tree-sitter.github.io/). It only parses, never runs the code. Broken code would make the model report syntax problems as "logic errors" and waste a call, so it stops here unless **Force review** is checked.
+**Syntax check.** Python uses the standard library's `ast` parser, Go/JavaScript/TypeScript use [tree-sitter](https://tree-sitter.github.io/). It only parses, never runs the code. Broken code would make the model report syntax problems as "syntax errors" and waste a call, so it stops here unless **Force review** is checked.
 
 **Prompt and response.** The prompt (`backend/app/llm/prompt.py`):
 
