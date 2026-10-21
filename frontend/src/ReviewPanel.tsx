@@ -1,23 +1,15 @@
 import { useEffect, useState } from "react";
-import type { Language, LintResponse } from "./api";
-import { type FixStatus, IssueCard } from "./IssueCard";
-
-export type ReviewState =
-  | { status: "idle" }
-  | { status: "loading"; model: string | null }
-  | { status: "done"; result: LintResponse; code: string; language: Language }
-  | { status: "error"; message: string };
-
-type Props = {
-  review: ReviewState;
-  onCancel: () => void;
-  selected: number | null;
-  onSelect: (index: number) => void;
-  onHover: (index: number | null) => void;
-  fixStatus: FixStatus[];
-  onReplace: (index: number) => void;
-  stale: boolean;
-};
+import { IssueCard } from "./IssueCard";
+import {
+  cancelReview,
+  hoverIssue,
+  replaceFix,
+  selectFixStatus,
+  selectStale,
+  toggleIssue,
+  useAppDispatch,
+  useAppSelector,
+} from "./store";
 
 function Elapsed() {
   const [seconds, setSeconds] = useState(0);
@@ -28,17 +20,12 @@ function Elapsed() {
   return <span className="muted">{seconds}s</span>;
 }
 
-export function ReviewPanel(props: Props) {
-  const {
-    review,
-    onCancel,
-    selected,
-    onSelect,
-    onHover,
-    fixStatus,
-    onReplace,
-    stale,
-  } = props;
+export function ReviewPanel() {
+  const dispatch = useAppDispatch();
+  const review = useAppSelector((s) => s.app.review);
+  const selected = useAppSelector((s) => s.app.selected);
+  const fixStatus = useAppSelector(selectFixStatus);
+  const stale = useAppSelector(selectStale);
 
   if (review.status === "idle") {
     return (
@@ -55,7 +42,7 @@ export function ReviewPanel(props: Props) {
           Reviewing with {review.model ?? "the default model"}… <Elapsed />
         </p>
         <p className="muted small">Local models can take a minute or two.</p>
-        <button onClick={onCancel}>Cancel</button>
+        <button onClick={() => dispatch(cancelReview())}>Cancel</button>
       </div>
     );
   }
@@ -90,10 +77,10 @@ export function ReviewPanel(props: Props) {
             issue={issue}
             language={review.language}
             open={i === selected}
-            onToggle={() => onSelect(i)}
-            onHover={(hovering) => onHover(hovering ? i : null)}
+            onToggle={() => dispatch(toggleIssue(i))}
+            onHover={(hovering) => dispatch(hoverIssue(hovering ? i : null))}
             fixStatus={fixStatus[i]}
-            onReplace={() => onReplace(i)}
+            onReplace={() => dispatch(replaceFix(i))}
           />
         ))}
       </ul>

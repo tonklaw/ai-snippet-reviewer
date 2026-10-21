@@ -1,18 +1,17 @@
 import type { ModelInfo } from "./api";
-
-type Props = {
-  models: ModelInfo[] | null; // null while loading
-  value: string | null;
-  onChange: (id: string) => void;
-  error: string | null;
-};
+import { setModel, useAppDispatch, useAppSelector } from "./store";
 
 function label(m: ModelInfo) {
   const name = m.model.split("/").pop();
   return m.available ? `${m.id} (${name})` : `${m.id}: ${m.reason}`;
 }
 
-export function ModelSelect({ models, value, onChange, error }: Props) {
+export function ModelSelect() {
+  const dispatch = useAppDispatch();
+  const models = useAppSelector((s) => s.app.models);
+  const value = useAppSelector((s) => s.app.model);
+  const error = useAppSelector((s) => s.app.modelsError);
+
   if (error) return <span className="error-text">Models: {error}</span>;
 
   return (
@@ -20,7 +19,7 @@ export function ModelSelect({ models, value, onChange, error }: Props) {
       Model
       <select
         value={value ?? ""}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => dispatch(setModel(e.target.value))}
         disabled={!models}
       >
         {!models && <option value="">Loading…</option>}
