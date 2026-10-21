@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     llm_max_tokens: int = 8000
     ollama_api_base: str = "http://localhost:11434"
 
+    cache_backend: Literal["memory", "redis"] = "memory"
+    cache_ttl_s: int = 86400  # 24 hours
+    redis_url: str = "redis://localhost:6379/0"
+
 
 @functools.lru_cache
 def get_settings() -> Settings:
