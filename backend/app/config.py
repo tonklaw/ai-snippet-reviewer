@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     log_level: str = "DEBUG"
-    cors_origin: list[str] = ["*"]
+    cors_origin: list[str] = ["http://localhost:5173"]
 
     llm_provider: Literal["mock", "litellm"] = "mock"
 
