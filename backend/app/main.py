@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import router
 from app.config import Settings, get_settings
+from app.errors import register_error_handlers
+from app.llm import build_provider
+from app.review import ReviewService
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -18,11 +21,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
     )
 
-    router = APIRouter()
+    register_error_handlers(app)
 
-    @router.get("/health")
-    async def health():
-        return {"status": "ok", "env": settings.app_env}
+    app.state.review_service = ReviewService(build_provider(settings), settings)
 
     app.include_router(router)
 

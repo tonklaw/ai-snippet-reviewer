@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
 
@@ -30,3 +30,24 @@ class Issue(ApiModel):
     title: str
     description: str
     fix: Fix | None = None
+
+
+class LintRequest(ApiModel):
+    language: Language
+    code: str = Field(min_length=1)
+    model: str | None = None
+    force_review: bool = False
+
+
+class LintMetadata(ApiModel):
+    stage: Literal["syntax", "review"]
+    # None when the syntax gate stopped the request before any model ran
+    model: str | None
+    duration_ms: int
+    cached: bool
+
+
+class LintResponse(ApiModel):
+    issues: list[Issue]
+    summary: str
+    metadata: LintMetadata

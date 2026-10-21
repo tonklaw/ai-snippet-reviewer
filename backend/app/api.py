@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Request
 
 from app.config import Settings, get_settings
 from app.review import ReviewService
+from app.schema import LintRequest, LintResponse
 
 router = APIRouter()
 
@@ -15,3 +16,11 @@ def get_review_service(request: Request) -> ReviewService:
 @router.get("/health")
 async def health(settings: Annotated[Settings, Depends(get_settings)]):
     return {"status": "ok", "env": settings.app_env}
+
+
+@router.post("/lint", response_model=LintResponse)
+async def lint(
+    req: LintRequest,
+    service: Annotated[ReviewService, Depends(get_review_service)],
+) -> LintResponse:
+    return await service.lint(req)
