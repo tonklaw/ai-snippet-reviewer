@@ -14,6 +14,6 @@ class Settings(BaseSettings):
     cors_origin: list[str] = ["*"]
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def get_settings() -> Settings:
     return Settings()
