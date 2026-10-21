@@ -17,6 +17,7 @@ import {
 } from "./api";
 import { applyFix } from "./fixes";
 import type { FixStatus } from "./IssueCard";
+import { loadSaved, type Saved, save } from "./persist";
 import { SAMPLES } from "./samples";
 
 // state 
@@ -50,6 +51,7 @@ const initialState: AppState = {
   selected: null,
   hovered: null,
   applied: [],
+  ...loadSaved(),
 };
 
 // async calls
@@ -120,7 +122,8 @@ const appSlice = createSlice({
     builder
       .addCase(loadModels.fulfilled, (state, action) => {
         state.models = action.payload.models;
-        state.model = action.payload.default;
+        const keep = action.payload.models.some((m) => m.id === state.model && m.available);
+        if (!keep) state.model = action.payload.default;
       })
       .addCase(loadModels.rejected, (state, action) => {
         if (!action.meta.aborted) state.modelsError = action.error.message ?? "Failed";
@@ -193,6 +196,20 @@ export const selectFixStatus = createSelector([selectApp], (app): FixStatus[] =>
 // store
 export const store = configureStore({
   reducer: { app: appSlice.reducer },
+});
+
+// Save the remembered fields when one of them changes
+let lastSaved: Saved | null = null;
+let saveTimer: ReturnType<typeof setTimeout> | undefined;
+store.subscribe(() => {
+  const { language, code, model, forceReview } = store.getState().app;
+  const now = { language, code, model, forceReview };
+  if (lastSaved && Object.entries(now).every(([k, v]) => lastSaved?.[k as keyof Saved] === v)) {
+    return;
+  }
+  lastSaved = now;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => save(now), 300);
 });
 
 export type RootState = ReturnType<typeof store.getState>;
