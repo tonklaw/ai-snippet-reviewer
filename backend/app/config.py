@@ -1,7 +1,10 @@
 import functools
-from typing import Literal
+from typing import Any, Literal
 
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+load_dotenv(override=False)
 
 
 class Settings(BaseSettings):
@@ -19,6 +22,20 @@ class Settings(BaseSettings):
     # Request limits for POST /lint (413 when exceeded)
     max_code_bytes: int = 20_000
     max_code_lines: int = 500
+
+    llm_models: dict[str, str] = {
+        "claude": "anthropic/claude-sonnet-5-5",
+        "local": "ollama_chat/qwen2.5-coder:3b",
+    }
+
+    llm_model_params: dict[str, dict[str, Any]] = {
+        "claude": {"reasoning_effort": "medium"},
+        "local": {"temperature": 0},
+    }
+
+    llm_timeout_s: float = 120  # local model is slow
+    llm_max_tokens: int = 8000
+    ollama_api_base: str = "http://localhost:11434"
 
 
 @functools.lru_cache
