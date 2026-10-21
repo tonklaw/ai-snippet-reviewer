@@ -9,7 +9,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_env: str = "dev"
+    app_env: str = "development"
     log_level: str = "DEBUG"
     cors_origin: list[str] = ["*"]
 
